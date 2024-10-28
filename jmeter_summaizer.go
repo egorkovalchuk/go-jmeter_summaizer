@@ -133,7 +133,7 @@ func main() {
 				return err
 			}
 			if !info.IsDir() {
-				StartReadFile(info.Name())
+				StartReadFile(info.Name(), path)
 			}
 			return nil
 		})
@@ -142,7 +142,7 @@ func main() {
 }
 
 // Запуск чтения файла
-func StartReadFile(fileName string) {
+func StartReadFile(fileName string, full string) {
 	if strings.HasSuffix(fileName, global_cfg.File_pattern) {
 		// Если еще не обрабатывает
 		if !PrcList.Contain(fileName) {

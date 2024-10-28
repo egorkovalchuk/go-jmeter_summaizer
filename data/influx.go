@@ -14,15 +14,12 @@ import (
 )
 
 func StartWriteInfluxHTTPV2(cfg Config, f func(logtext interface{}), InputString chan string) {
-	heartbeat := time.Tick(10 * time.Second)
 	client := influxdb2.NewClient(cfg.InfluxDBURL, cfg.InfluxDBToken)
 	writeAPI := client.WriteAPIBlocking(cfg.InfluxDBORG, cfg.InfluxDBBucket)
 
 	defer client.Close()
 	for {
 		select {
-		case <-heartbeat:
-			f("OK")
 		case str := <-InputString:
 			err := writeAPI.WriteRecord(context.Background(), str)
 			if err != nil {
