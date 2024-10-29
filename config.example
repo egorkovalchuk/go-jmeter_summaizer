@@ -1,0 +1,12 @@
+{
+    "InfluxDBVersion": 2, -- Version InfluxDB
+    "InfluxDBProto": "tcp", -- Proto
+    "InfluxDBURL": "http://influxDB:8086",
+    "InfluxDBToken": "toketoken==", 
+    "InfluxDBORG": "MyOrg",
+    "InfluxDBBucket": "jmeter",
+    "Project": "MyProject",
+    "File_path" : "",
+    "File_pattern" : ".out"
+} 
+ 

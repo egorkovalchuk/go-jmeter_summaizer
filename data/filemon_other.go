@@ -1,3 +1,4 @@
+//go:build !linux
 // +build !linux
 
 // Windows backend based on ReadDirectoryChangesW()

@@ -43,8 +43,6 @@ var (
 	// директория
 	directory string
 
-	// Переменная для выбора сканирования файлов
-	type_scan int
 	// режим работы сервиса(дебаг мод)
 	hp bool
 	// Канал записи статистики в БД
@@ -93,7 +91,6 @@ func main() {
 	ProcessDebug("Start with debug mode")
 
 	if hp {
-		type_scan = 1
 		ProcessInfo("Use github.com/hpcloud/tail")
 	}
 
@@ -173,8 +170,8 @@ func StartInfluxClient() {
 func StartReadTailFile(fileName string, project string, suite string) {
 
 	if hp {
-		t, err := tail.TailFile(fileName, tail.Config{Location: &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END},
-			Follow: true, ReOpen: true, MustExist: true})
+		t, err := tail.TailFile(fileName, tail.Config{Location: &tail.SeekInfo{Offset: 0, Whence: io.SeekEnd},
+			Follow: true, ReOpen: true, MustExist: true, Logger: log.Default()})
 		if err != nil {
 			ProcessError(err)
 		}

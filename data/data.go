@@ -48,16 +48,8 @@ func (cfg *Config) ReadConf(confname string) {
 
 // Вызов справки
 func HelpStart() {
-	fmt.Println("Use -d start deamon mode")
-	fmt.Println("Use -s stop deamon mode")
 	fmt.Println("Use -debug start with debug mode")
-	fmt.Println("Use -file save cdr to files(Offline)")
-	fmt.Println("Use -brt message(cdr) transmission by diameter to the billing server ")
-	fmt.Println("Use -brtlist task list (local,roam)")
-	fmt.Println("Use -camel for UP SCP Server(Camel protocol)")
-	fmt.Println("Use -rm Delete all files in directories(Test optional)")
-	fmt.Println("Debug option")
-	fmt.Println("Use -slow_camel for send Camel message every 10 seconds")
+	fmt.Println("Use -hp start with with hpcloud/tail")
 }
 
 // Нештатное завершение при критичной ошибке
