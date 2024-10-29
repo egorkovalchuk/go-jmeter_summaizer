@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"time"
+
+	"github.com/egorkovalchuk/go-jmeter_summaizer/data"
 )
 
 type LogStruct struct {
@@ -75,6 +77,12 @@ func ProcessInflux(logtext interface{}) {
 func ProcessPanic(logtext interface{}) {
 	fmt.Println(logtext)
 	os.Exit(2)
+}
+
+func ProcessAny() func(data.LogStruct) {
+	return func(r data.LogStruct) {
+		LogChannel <- LogStruct{t: r.T, text: r.Text}
+	}
 }
 
 // Инициализация переменных

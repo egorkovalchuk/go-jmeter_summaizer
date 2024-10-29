@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"path/filepath"
-
 	"github.com/egorkovalchuk/go-jmeter_summaizer/data"
 	"github.com/hpcloud/tail" // более уиверсальное
 )
@@ -122,19 +120,14 @@ func main() {
 	readDirectory.Close()
 	StartInfluxClient()
 
-	// Выбрать запуск с переопределением. Зависть будет от ОС
-	for {
-		filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			if !info.IsDir() {
-				StartReadFile(info.Name(), path)
-			}
-			return nil
-		})
-		sleep(1 * time.Second)
+	// Переопределение от ОС
+	data.DirectoryScan(directory, ProcessAny(), StartReadFileM())
+}
+
+// Переброска
+func StartReadFileM() func(name string, path string) {
+	return func(name string, path string) {
+		StartReadFile(name, path)
 	}
 }
 
