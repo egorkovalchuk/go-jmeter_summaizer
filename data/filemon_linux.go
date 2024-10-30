@@ -121,11 +121,16 @@ func DirectoryScan(pathname string, f func(log LogStruct), start func(name strin
 			// Move to the next event in the buffer
 			offset += syscall.SizeofInotifyEvent + nameLen
 
-			if raw.Mask == syscall.IN_CREATE || raw.Mask == syscall.IN_MODIFY {
-				f(LogStruct{T: "INFO", Text: fmt.Sprint("Inotify watch ", Name, " Mask ", uint32(raw.Mask), " Cookie ", uint32(raw.Cookie))})
+			switch raw.Mask {
+			case syscall.IN_CREATE:
+				f(LogStruct{T: "INFO", Text: fmt.Sprint("Watcht create file ", Name)})
+				start(Name, NameFull)
+
+			case syscall.IN_MODIFY:
+				f(LogStruct{T: "INFO", Text: fmt.Sprint("Watcht modify file ", Name)})
 				start(Name, NameFull)
 			}
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(250 * time.Millisecond)
 	}
 }
