@@ -14,7 +14,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/net v0.0.0-20191112182307-2180aed22343 // indirect
 	golang.org/x/sys v0.4.0 // indirect
-	gopkg.in/fsnotify.v1 v1.4.7 // indirect
+	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )

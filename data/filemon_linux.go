@@ -4,8 +4,6 @@
 package data
 
 import (
-	// Use golang.org/blob/master/x/exp/inotify/inotify_linux.go ??
-	// "golang.org/x/sys/unix"
 	"errors"
 	"fmt"
 	"os"
@@ -13,6 +11,9 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	// Use golang.org/blob/master/x/exp/inotify/inotify_linux.go ??
+	"gopkg.in/fsnotify.v1"
 )
 
 type LogStruct struct {
@@ -57,6 +58,39 @@ const (
 	IN_Q_OVERFLOW uint32 = syscall.IN_Q_OVERFLOW
 	IN_UNMOUNT    uint32 = syscall.IN_UNMOUNT
 )
+
+// Вариант с пакетом
+func DirectoryScan1(pathname string, f func(log LogStruct), start func(name string, path string)) {
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		f(LogStruct{T: "PANIC", Text: err})
+		os.Exit(1)
+	}
+	defer watcher.Close()
+
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case event := <-watcher.Events:
+				f(LogStruct{T: "INFO", Text: fmt.Sprint("event:", event)})
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					f(LogStruct{T: "INFO", Text: fmt.Sprint("modified file:", event.Name)})
+				}
+			case err := <-watcher.Errors:
+				f(LogStruct{T: "INFO", Text: fmt.Sprint("error:", err)})
+			}
+		}
+	}()
+
+	err = watcher.Add(pathname)
+	if err != nil {
+		f(LogStruct{T: "PANIC", Text: err})
+		os.Exit(1)
+	}
+	<-done
+}
 
 // Функция сканирования директории
 // входные директория, функция логирования

@@ -9,7 +9,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/egorkovalchuk/go-jmeter_summaizer/data"
 	"github.com/hpcloud/tail" // более уиверсальное
@@ -192,7 +191,7 @@ func StartReadTailFile(fileName string, project string, suite string) {
 
 		for scanner.Scan() {
 			// добавить канал выхода
-			fmt.Println(scanner.Text())
+			ProcessDebug(scanner.Text())
 			ScanAndSend(scanner.Text(), project, suite)
 		}
 		if err := scanner.Err(); err != nil {
@@ -224,18 +223,6 @@ func ScanAndSend(Text string, project string, suite string) {
 		ReportStat <- line
 	}
 	ProcessDebug(line)
-}
-
-func (t tailReader) Read(b []byte) (int, error) {
-	for {
-		n, err := t.ReadCloser.Read(b)
-		if n > 0 {
-			return n, nil
-		} else if err != io.EOF {
-			return n, err
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
 }
 
 func newTailReader(fileName string) (tailReader, error) {
