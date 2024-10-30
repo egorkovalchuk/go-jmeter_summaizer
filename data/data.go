@@ -62,7 +62,11 @@ func ProcessError(err error) {
 func GetSuite(filename string) string {
 	var validID1 = regexp.MustCompile(`(.*)-+\d*.out`)
 	ms1 := validID1.FindStringSubmatch(filename)
-	return strings.ToLower(ms1[1])
+	if len(ms1) > 0 {
+		return strings.ToLower(ms1[1])
+	} else {
+		return ""
+	}
 }
 
 // Конструктор для типа данных FileScanList для расчетов по типам

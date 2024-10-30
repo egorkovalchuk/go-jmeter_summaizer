@@ -89,8 +89,3 @@ func ProcessAny() func(data.LogStruct) {
 func InitVariables() {
 
 }
-
-// Аналог Sleep.
-func sleep(d time.Duration) {
-	<-time.After(d)
-}
