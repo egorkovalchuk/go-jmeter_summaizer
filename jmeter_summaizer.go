@@ -19,7 +19,7 @@ import (
 const (
 	logFileName = "summaizer.log"
 	pidFileName = "summaizer.pid"
-	versionutil = "0.0.1"
+	versionutil = "0.0.2"
 )
 
 type tailReader struct {
@@ -196,7 +196,6 @@ func StartReadTailFile(fileName string, project string, suite string) {
 		}
 		if err := scanner.Err(); err != nil {
 			ProcessError(err)
-			fmt.Fprintln(os.Stderr, "reading:", err)
 		}
 	}
 }

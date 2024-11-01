@@ -161,7 +161,7 @@ func DirectoryScan(pathname string, f func(log LogStruct), start func(name strin
 				start(Name, NameFull)
 
 			case syscall.IN_MODIFY:
-				f(LogStruct{T: "INFO", Text: fmt.Sprint("Watcht modify file ", Name)})
+				// f(LogStruct{T: "INFO", Text: fmt.Sprint("Watcht modify file ", Name)})
 				start(Name, NameFull)
 			}
 		}

@@ -29,8 +29,15 @@ func StartWriteInfluxHTTPV2(cfg Config, f func(logtext interface{}), InputString
 
 func StartWriteInfluxHTTPV1(cfg Config, f func(logtext interface{}), InputString chan string) {
 
+	request := cfg.InfluxDBURL
+
+	if !strings.HasSuffix(request, "/") {
+		request += "/"
+	}
+
+	request += "write?db=" + cfg.InfluxDBBucket
+
 	for str := range InputString {
-		request := cfg.InfluxDBURL
 
 		resp, err := http.NewRequest("POST", request, nil)
 		if err != nil {
@@ -75,12 +82,17 @@ func StartWriteInfluxUDPV1(cfg Config, f func(logtext interface{}), InputString 
 
 func NewUDPClient(cfg Config) (*net.UDPConn, error) {
 	var udpAddr *net.UDPAddr
-	udpAddr, err := net.ResolveUDPAddr("udp", cfg.InfluxDBURL)
+	var url string
+	if strings.HasPrefix(cfg.InfluxDBURL, "http://") {
+		url = cfg.InfluxDBURL[len("http://"):]
+	} else {
+		url = cfg.InfluxDBURL
+	}
 
+	udpAddr, err := net.ResolveUDPAddr("udp", url)
 	if err != nil {
 		return nil, err
 	}
-
 	conn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
 		return nil, err
