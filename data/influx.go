@@ -27,6 +27,7 @@ func StartWriteInfluxHTTPV2(cfg Config, f func(logtext interface{}), InputString
 	}
 }
 
+// Может работать с двумя версиями, если надо будет отвязаться от библиотеки инфлююкса
 func StartWriteInfluxHTTPV1(cfg Config, f func(logtext interface{}), InputString chan string) {
 
 	request := cfg.InfluxDBURL
@@ -35,13 +36,29 @@ func StartWriteInfluxHTTPV1(cfg Config, f func(logtext interface{}), InputString
 		request += "/"
 	}
 
-	request += "write?db=" + cfg.InfluxDBBucket
+	switch cfg.InfluxDBVersion {
+	case 1:
+		request += "write?db=" + cfg.InfluxDBBucket
+	case 2:
+		request += "api/v2/write?bucket=" + cfg.InfluxDBBucket + "&precision=ns&org=" + cfg.InfluxDBORG
+	default:
+		f("Database version not specified")
+		return
+	}
 
 	for str := range InputString {
 
 		resp, err := http.NewRequest("POST", request, nil)
 		if err != nil {
 			f(err)
+		}
+
+		if cfg.InfluxDBVersion == 2 {
+			if cfg.InfluxDBToken != "" {
+				resp.Header.Set("Authorization", "Token "+cfg.InfluxDBToken)
+			} else {
+				f("Stopping InfluxDB write, Token is empty")
+			}
 		}
 
 		resp.Header.Add("User-Agent", "go-summazier_jmeter")
