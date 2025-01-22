@@ -6,6 +6,9 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
+
+	"github.com/hpcloud/tail"
 )
 
 type Config struct {
@@ -24,9 +27,13 @@ type FileScan struct {
 	FileName string
 	Path     string
 	Suite    string
+	Tail     *tail.Tail
 }
 
-type FileScanList map[string]FileScan
+type FileScanList struct {
+	M  map[string]FileScan
+	mx sync.RWMutex
+}
 
 func (cfg *Config) ReadConf(confname string) {
 	file, err := os.Open(confname)
@@ -71,19 +78,46 @@ func GetSuite(filename string) string {
 
 // Конструктор для типа данных FileScanList для расчетов по типам
 func NewFileScanList() FileScanList {
-	return make(map[string]FileScan)
+	return FileScanList{
+		M: make(map[string]FileScan),
+	}
 }
 
-func (fs *FileScanList) AddList(filename string) {
-	(*fs)[filename] = FileScan{FileName: filename, Path: ""}
+func (fs *FileScanList) AddList(filename string, path string, suite string, t *tail.Tail) {
+	(*fs).mx.Lock()
+	(*fs).M[filename] = FileScan{FileName: filename, Path: path, Suite: suite, Tail: t}
+	(*fs).mx.Unlock()
 }
 
 func (fs *FileScanList) DeleteList(filename string) {
-	delete((*fs), filename)
+	(*fs).mx.Lock()
+	if (*fs).M[filename].Tail != nil {
+		(*fs).M[filename].Tail.Stop()
+	}
+	delete((*fs).M, filename)
+	(*fs).mx.Unlock()
 }
 
 // Наличие ключа в карте
 func (fs *FileScanList) Contain(key string) bool {
-	_, ok := (*fs)[key]
+	(*fs).mx.RLock()
+	_, ok := (*fs).M[key]
+	(*fs).mx.RUnlock()
+	return ok
+}
+
+// Размерность списка
+func (fs *FileScanList) Len() int {
+	(*fs).mx.RLock()
+	ok := len((*fs).M)
+	(*fs).mx.RUnlock()
+	return ok
+}
+
+// Возвращаем карту
+func (fs *FileScanList) Map() map[string]FileScan {
+	(*fs).mx.RLock()
+	ok := (*fs).M
+	(*fs).mx.RUnlock()
 	return ok
 }

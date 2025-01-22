@@ -4,9 +4,11 @@
 package data
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
 	"syscall"
 	"time"
@@ -110,61 +112,71 @@ func DirectoryScan(pathname string, f func(log LogStruct), start func(name strin
 
 	var buf [syscall.SizeofInotifyEvent * 4096]byte
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	for {
-		n, err := syscall.Read(fd, buf[:])
-		if err != nil {
-			f(LogStruct{T: "ERROR", Text: err})
-		}
-
-		// Передать остановку из вне?
-		if n == 0 {
-			success, err := syscall.InotifyRmWatch(fd, uint32(wd))
-			if success == -1 {
-				f(LogStruct{T: "ERROR", Text: fmt.Sprint(os.NewSyscallError("inotify_rm_watch", err))})
-			}
-			err = syscall.Close(fd)
-			if err != nil {
-				f(LogStruct{T: "ERROR", Text: os.NewSyscallError("close", err)})
-			}
+		select {
+		case <-ctx.Done():
+			stop()
+			f(LogStruct{T: "INFO", Text: "Stoping service"})
+			time.Sleep(1 * time.Second)
 			return
-		}
-		if n < 0 {
-			f(LogStruct{T: "ERROR", Text: fmt.Sprint(os.NewSyscallError("read", err))})
-			continue
-		}
-		if n < syscall.SizeofInotifyEvent {
-			f(LogStruct{T: "ERROR", Text: fmt.Sprint(errors.New("inotify: short read in readEvents()"))})
-			continue
-		}
-
-		var Name string
-		var offset uint32 = 0
-		for offset <= uint32(n-syscall.SizeofInotifyEvent) {
-			raw := (*syscall.InotifyEvent)(unsafe.Pointer(&buf[offset]))
-			NameFull := pathname
-
-			nameLen := uint32(raw.Len)
-			if nameLen > 0 {
-				// Point "bytes" at the first byte of the filename
-				bytes := (*[syscall.PathMax]byte)(unsafe.Pointer(&buf[offset+syscall.SizeofInotifyEvent]))
-				// The filename is padded with NUL bytes. TrimRight() gets rid of those.
-				Name = strings.TrimRight(string(bytes[0:nameLen]), "\000")
-				NameFull += "/" + Name
+		default:
+			n, err := syscall.Read(fd, buf[:])
+			if err != nil {
+				f(LogStruct{T: "ERROR", Text: err})
 			}
 
-			// Move to the next event in the buffer
-			offset += syscall.SizeofInotifyEvent + nameLen
-
-			switch raw.Mask {
-			case syscall.IN_CREATE:
-				f(LogStruct{T: "INFO", Text: fmt.Sprint("Watcht create file ", Name)})
-				start(Name, NameFull)
-
-			case syscall.IN_MODIFY:
-				// f(LogStruct{T: "INFO", Text: fmt.Sprint("Watcht modify file ", Name)})
-				start(Name, NameFull)
+			// Передать остановку из вне?
+			if n == 0 {
+				success, err := syscall.InotifyRmWatch(fd, uint32(wd))
+				if success == -1 {
+					f(LogStruct{T: "ERROR", Text: fmt.Sprint(os.NewSyscallError("inotify_rm_watch", err))})
+				}
+				err = syscall.Close(fd)
+				if err != nil {
+					f(LogStruct{T: "ERROR", Text: os.NewSyscallError("close", err)})
+				}
+				return
 			}
+			if n < 0 {
+				f(LogStruct{T: "ERROR", Text: fmt.Sprint(os.NewSyscallError("read", err))})
+				continue
+			}
+			if n < syscall.SizeofInotifyEvent {
+				f(LogStruct{T: "ERROR", Text: fmt.Sprint(errors.New("inotify: short read in readEvents()"))})
+				continue
+			}
+
+			var Name string
+			var offset uint32 = 0
+			for offset <= uint32(n-syscall.SizeofInotifyEvent) {
+				raw := (*syscall.InotifyEvent)(unsafe.Pointer(&buf[offset]))
+				NameFull := pathname
+
+				nameLen := uint32(raw.Len)
+				if nameLen > 0 {
+					// Point "bytes" at the first byte of the filename
+					bytes := (*[syscall.PathMax]byte)(unsafe.Pointer(&buf[offset+syscall.SizeofInotifyEvent]))
+					// The filename is padded with NUL bytes. TrimRight() gets rid of those.
+					Name = strings.TrimRight(string(bytes[0:nameLen]), "\000")
+					NameFull += "/" + Name
+				}
+
+				// Move to the next event in the buffer
+				offset += syscall.SizeofInotifyEvent + nameLen
+
+				switch raw.Mask {
+				case syscall.IN_CREATE:
+					f(LogStruct{T: "INFO", Text: fmt.Sprint("Watcht create file ", Name)})
+					start(Name, NameFull)
+
+				case syscall.IN_MODIFY:
+					// f(LogStruct{T: "INFO", Text: fmt.Sprint("Watcht modify file ", Name)})
+					start(Name, NameFull)
+				}
+			}
+			time.Sleep(250 * time.Millisecond)
 		}
-		time.Sleep(250 * time.Millisecond)
 	}
 }

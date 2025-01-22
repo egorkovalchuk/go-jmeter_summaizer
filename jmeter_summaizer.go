@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/egorkovalchuk/go-jmeter_summaizer/data"
 	"github.com/hpcloud/tail" // более уиверсальное
@@ -44,12 +45,12 @@ var (
 	hp bool
 	// режим дез отправки в инфлюкс
 	noinflux bool
+	// Чтение JTL
+	jtl bool
 	// Канал записи статистики в БД
 	ReportStat = make(chan string, 1000)
 
-	// Обробатываемые файлы
-	FileScanList []data.FileScan
-
+	// Обрабатываемые файлы
 	PrcList data.FileScanList
 )
 
@@ -71,6 +72,7 @@ func main() {
 	flag.BoolVar(&debugm, "debug", false, "Start with debug mode")
 	flag.BoolVar(&hp, "hp", false, "Start with hpcloud/tail")
 	flag.BoolVar(&noinflux, "noinf", false, "Not send messgae to influxdb(test optional)")
+	flag.BoolVar(&jtl, "jtl", false, "Start read jtl files")
 	flag.Parse()
 
 	// Открытие лог файла
@@ -122,6 +124,7 @@ func main() {
 		StartInfluxClient()
 	}
 
+	go CheckFiles()
 	// Переопределение от ОС
 	// бесконечное чтение каталога
 	// провкрка на новый файл
@@ -146,8 +149,10 @@ func StartReadFile(fileName string, full string) {
 			if rr != "" {
 				go StartReadTailFile(fileName, global_cfg.Project, rr)
 			}
-			PrcList.AddList(fileName)
 		}
+	} else if strings.HasSuffix(fileName, "jtl") && jtl {
+		ProcessInfo("Start read JTL files " + fileName)
+
 	}
 }
 
@@ -175,7 +180,7 @@ func StartReadTailFile(fileName string, project string, suite string) {
 		if err != nil {
 			ProcessError(err)
 		}
-
+		PrcList.AddList(fileName, "", suite, t)
 		for line := range t.Lines {
 			ProcessDebug(line.Text)
 			ScanAndSend(line.Text, project, suite)
@@ -188,7 +193,7 @@ func StartReadTailFile(fileName string, project string, suite string) {
 		}
 		defer t.Close()
 		scanner := bufio.NewScanner(t)
-
+		PrcList.AddList(fileName, "", suite, nil)
 		for scanner.Scan() {
 			// добавить канал выхода
 			ProcessDebug(scanner.Text())
@@ -234,4 +239,17 @@ func newTailReader(fileName string) (tailReader, error) {
 		return tailReader{}, err
 	}
 	return tailReader{f}, nil
+}
+
+func CheckFiles() {
+	ProcessDebug("Open files :" + fmt.Sprint(PrcList.Len()))
+	for {
+		for k, v := range PrcList.Map() {
+			if _, err := os.Stat(v.FileName); os.IsNotExist(err) {
+				PrcList.DeleteList(k)
+				ProcessInfo("Stoping tail file " + k)
+			}
+		}
+		time.Sleep(1 * time.Second)
+	}
 }

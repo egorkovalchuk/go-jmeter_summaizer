@@ -6,4 +6,6 @@ Create project
 Fix Suite name
 ### New
 Use Inotify for Linux
-
+## Vesion 0.0.3
+### New
+Added handling of system call to stop 
