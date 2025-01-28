@@ -9,3 +9,6 @@ Use Inotify for Linux
 ## Vesion 0.0.3
 ### New
 Added handling of system call to stop 
+## Vesion 0.0.4
+### New
+Added linux script start/stop 

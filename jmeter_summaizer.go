@@ -20,7 +20,7 @@ import (
 const (
 	logFileName = "summaizer.log"
 	pidFileName = "summaizer.pid"
-	versionutil = "0.0.2"
+	versionutil = "0.0.4"
 )
 
 type tailReader struct {
@@ -57,7 +57,7 @@ var (
 func main() {
 
 	var argument string
-	if os.Args != nil && len(os.Args) > 1 {
+	if len(os.Args) > 1 {
 		argument = os.Args[1]
 	} else {
 		data.HelpStart()
